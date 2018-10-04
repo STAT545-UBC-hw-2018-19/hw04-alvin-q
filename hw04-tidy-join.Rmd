@@ -94,3 +94,177 @@ med_lifeEx %>%
 Now we have a scatter plot with line to visualize. Note, I have changed the theme and the axis label on the Y. Additionally, the gathered format is easier for plotting, but the spread format is nicer for viewing in a table.
 
 ## Join Prompts (join, merge, look up)
+
+### Activity 1
+
+Create a second data frame, complementary to Gapminder. Join this with (part of) Gapminder using a dplyr join function and make some observations about the process and result. Explore the different types of joins. Examples of a second data frame you could build:
+One row per country, a country variable and one or more variables with extra info, such as language spoken, NATO membership, national animal, or capitol city.
+
+First look at the gapminder col names.
+
+```{r}
+colnames(gapminder)
+```
+
+Read in a text file with country capital cities.
+
+```{r}
+country_cap <- read_delim("Country_capitals.txt", delim = "$", col_names = TRUE)
+
+head(country_cap, 20) %>%
+  knitr::kable()
+```
+
+Here, I show that we can use `read_delim` and I specifically formatted the file with "$" as the delimeter. This file has countries and capitals (shown with `head` of 20). I call this `country_cap`.
+
+```{r}
+gapminder %>%
+  filter(year == 1952) %>%
+  left_join(country_cap, by = "country") %>%
+  knitr::kable()
+```
+
+I first filter `gapminder` for data in 1952. Then I `left_join` with `country_cap`. I can see the `gapminder` entries, but now with a new column of `captial`. We can see some `NA`. This means that the country name was not in `country_cap`.
+
+```{r}
+gapminder %>%
+  filter(year == 1952) %>%
+  right_join(country_cap, by = "country") %>%
+  knitr::kable()
+```
+
+With `right_join`, we pick all the entries in `country_cap` and then add the columns that were also present in `gapminder`. Once again, note the `NA`.
+
+```{r}
+gapminder %>%
+  filter(year == 1952) %>%
+  inner_join(country_cap, by = "country") %>%
+  knitr::kable()
+```
+
+Note: this time, there are no `NA`. With `inner_join`, we only have the intersected country name data shown (those in common).
+
+```{r}
+gapminder %>%
+  filter(year == 1952) %>%
+  semi_join(country_cap, by = "country") %>%
+  knitr::kable()
+```
+
+With `semi_join`, we see all the rows in `gapminder` that have a country present in `country_cap`. So which countries are missing?
+
+```{r}
+gapminder %>%
+  filter(year == 1952) %>%
+  anti_join(country_cap, by = "country") %>%
+  knitr::kable()
+```
+
+These rows belong to countries found in `gapminder`, but not `country_cap`.
+
+```{r}
+anti_join(country_cap, gapminder, by = "country") %>%
+  knitr::kable()
+```
+
+Here, this `anti_join` will now show us countries present in `country_cap`, but not `gapminder`. Note that this differs from before! Order matters!
+
+These 2 `anti-join`s above show us that in data analysis, we should see what things may not match. In `gapminder`, we can see countries like "Congo, Dem. Rep." and "United States", Meanwhile, in `country_cap`, we have "Congo, Democratic Republic of the" and "United States of America". In fact, these are the same countries, but the spelling of the entries are different.
+
+Related to my own research, I might have 2 gene sets. And if I perform joins, I may have errors if a gene is referred to by 2 different names.
+
+## Activity 2
+
+Create your own cheatsheet patterned after Jenny’s but focused on something you care about more than comics! 
+
+Since I demonstrated various join functions above, I'm going to pick some set operations now.
+
+First I'll conduct 2 surveys about people and their favourite food.
+
+```{r}
+survey1 <- tibble(name = c("Alex", "Blake", "Charlie", "Diane"),
+                   food = c("Apple", "Bacon", "Cheese", "Donuts"))
+
+survey2 <- tibble(name = c("Blake", "Diane", "Eliza", "Frank"),
+                   food = c("Bacon", "Donuts", "Eggs", "Freezies"))
+
+survey1 %>%
+  knitr::kable()
+
+survey2 %>%
+  knitr::kable()
+
+```
+
+Let's try `bind_rows`.
+
+```{r}
+bind_rows(survey1, survey2) %>%
+  knitr::kable()
+```
+
+We can see that the 2 surveys get appended to each other. But there are repeats?
+
+```{r}
+intersect(survey1, survey2) %>%
+  knitr::kable()
+```
+
+Here is the `intersect`. We can see that the 2 surveys had overlap in who they interviewed. If we just want all of results, but without repeats (seen in row binds), we can use `union`.
+
+```{r}
+union(survey1, survey2) %>%
+  arrange(name) %>%
+  knitr::kable()
+```
+
+Here is now a complete list of both surveys (using `arrange` to maintain alphabetical order).
+
+Who was unique to survey 1?
+
+```{r}
+setdiff(survey1, survey2) %>%
+  knitr::kable()
+```
+
+And who was unique to survey 2?
+
+```{r}
+setdiff(survey2, survey1) %>%
+  knitr::kable()
+```
+
+`setdiff` lets us answer these questions. Note that the order matters!
+
+Now let's add a survey 3 to show a few more things. This has people's favourite movies.
+
+```{r}
+survey3 <- tibble(name = c("Alex", "Blake", "Charlie", "Diane"),
+                  Movie = c("Avengers", "Bambi", "Coco", "Dirty Dancing"))
+
+survey3 %>%
+  knitr::kable()
+```
+
+Let's `bind_cols`.
+
+```{r}
+bind_cols(survey1, survey3) %>%
+  knitr::kable()
+```
+
+Note: that the columns are bound, but this is not ideal. The name column is repeated.
+
+```{r}
+bind_cols(survey1, survey3 %>% select(Movie)) %>%
+   knitr::kable()
+```
+
+We could try this solution above.
+
+```{r}
+inner_join(survey1, survey3) %>%
+   knitr::kable()
+```
+
+Better yet is using a join. Note: that `dyplr` automatically joins with "name".
