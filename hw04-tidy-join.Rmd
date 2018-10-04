@@ -1,0 +1,96 @@
+---
+title: "HW04"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Homework 04: Tidy data and joins
+
+Load packages
+
+```{r}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(gapminder))
+```
+
+## Data Reshaping Prompts (and relationship to aggregation)
+
+### Activity 2
+
+Make a tibble with one row per year and columns for life expectancy for two or more countries.
+
+```{r}
+gap_subset <- gapminder %>%
+  filter(country %in% c("Iceland", "Japan", "Kenya")) %>%
+  select(country, year, lifeExp)
+
+gap_subset %>%
+  knitr::kable()
+```
+
+Here we can see the gapminder subset with 3 countries in a long format (with year and lifeExp).
+
+```{r}
+gap_subset %>%
+  spread(key = "country", value = "lifeExp") %>%
+  knitr::kable()
+```
+
+After `spread`, we can see that the columns are the lifeExp for the 3 countries and each row is a year.
+
+```{r}
+gap_subset %>%
+  ggplot(aes(x = year, y = lifeExp, color = country)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  ylab("Life Expectancy")
+```
+
+Now we have a scatter plot with line to visualize. Note, I have changed the theme and the axis label on the Y.
+
+### Activity 3
+
+Compute some measure of life expectancy (mean? median? min? max?) for all possible combinations of continent and year. Reshape that to have one row per year and one variable for each continent. Or the other way around: one row per continent and one variable per year.
+
+```{r}
+med_lifeEx <- gapminder %>%
+  group_by(continent, year) %>%
+  summarise(med = median(lifeExp))
+
+med_lifeEx %>%
+  knitr::kable()
+```
+
+Here we can see the median lifeExp for each continent each year. It is in a long format.
+
+```{r}
+med_lifeEx %>%
+  spread(key = "continent", value = "med") %>%
+  knitr::kable()
+```
+
+Here we can see it in a `spread` form with one column per continent.
+
+```{r}
+med_lifeEx %>%
+  spread(key = "continent", value = "med") %>%
+  gather(key = "continent", value = "med", -"year") %>%
+  knitr::kable()
+```
+
+We can see that `gather` and reverts `spread` back to the original form.
+
+```{r}
+med_lifeEx %>%
+    ggplot(aes(x = year, y = med, color = continent)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  ylab("Median Life Expectancy")
+```
+
+Now we have a scatter plot with line to visualize. Note, I have changed the theme and the axis label on the Y. Additionally, the gathered format is easier for plotting, but the spread format is nicer for viewing in a table.
+
+## Join Prompts (join, merge, look up)
